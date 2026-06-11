@@ -4,11 +4,11 @@ import { backendurl } from '../Url';
 
 const ChatBox = ({ isOpen, onClose }) => {
 
-
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
-  if (!isOpen) return null;
   const [isLoading, setIsLoading] = useState(false);
+
+  if (!isOpen) return null;
 
   const Handleclick_searchcars = async () => {
     if (!input.trim()) return;
@@ -26,20 +26,20 @@ const ChatBox = ({ isOpen, onClose }) => {
         },
         body: JSON.stringify({ query: currentInput }),
       });
-      
+
       const data = await res.json();
-      
+
       if (!res.ok || !data.success) {
-        setMessages((prev) => [...prev, { 
-          text: data.error || "Sorry, I encountered an error while searching. Please try again.", 
-          sender: 'bot' 
+        setMessages((prev) => [...prev, {
+          text: data.error || "Sorry, I encountered an error while searching. Please try again.",
+          sender: 'bot'
         }]);
         return;
       }
 
       let botText = data.reply || `Found ${data.matchedCarsCount || 0} cars matching your criteria.`;
-      setMessages((prev) => [...prev, { 
-        text: botText, 
+      setMessages((prev) => [...prev, {
+        text: botText,
         sender: 'bot',
         cars: data.carDetails || []
       }]);
@@ -118,7 +118,7 @@ const ChatBox = ({ isOpen, onClose }) => {
               }}
               className="flex-1 border border-gray-300 rounded-full px-6 py-4 text-lg focus:outline-none focus:border-blue-500 disabled:opacity-50"
             />
-            <button 
+            <button
               onClick={Handleclick_searchcars}
               disabled={isLoading}
               className="bg-blue-600 text-white rounded-full p-4 hover:bg-blue-700 transition-colors focus:outline-none flex items-center justify-center disabled:opacity-50"
