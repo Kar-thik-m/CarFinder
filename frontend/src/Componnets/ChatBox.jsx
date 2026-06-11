@@ -8,28 +8,46 @@ const ChatBox = ({ isOpen, onClose }) => {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState([]);
   if (!isOpen) return null;
+  const [isLoading, setIsLoading] = useState(false);
 
   const Handleclick_searchcars = async () => {
+    if (!input.trim()) return;
 
-    setMessages((prevMessages) => [...prevMessages, { text: input, sender: 'user' }]);
+    const currentInput = input;
+    setMessages((prevMessages) => [...prevMessages, { text: currentInput, sender: 'user' }]);
     setInput('');
+    setIsLoading(true);
 
-    const res = await fetch(`${backendurl}/api/cars/search`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query: input }),
-    });
-    const data = await res.json();
-    let botText = data.reply || `Found ${data.matchedCarsCount || 0} cars matching your criteria.`;
-    setMessages((prevMessages) => [...prevMessages, { 
-      text: botText, 
-      sender: 'bot',
-      cars: data.carDetails || []
-    }]);
+    try {
+      const res = await fetch(`${backendurl}/api/cars/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: currentInput }),
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok || !data.success) {
+        setMessages((prev) => [...prev, { 
+          text: data.error || "Sorry, I encountered an error while searching. Please try again.", 
+          sender: 'bot' 
+        }]);
+        return;
+      }
 
-
+      let botText = data.reply || `Found ${data.matchedCarsCount || 0} cars matching your criteria.`;
+      setMessages((prev) => [...prev, { 
+        text: botText, 
+        sender: 'bot',
+        cars: data.carDetails || []
+      }]);
+    } catch (error) {
+      setMessages((prev) => [...prev, { text: "Network error. Make sure the backend is running.", sender: 'bot' }]);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -76,6 +94,13 @@ const ChatBox = ({ isOpen, onClose }) => {
               </div>
             </div>
           ))}
+          {isLoading && (
+            <div className="flex justify-start flex-col items-start">
+              <div className="rounded-xl p-4 text-lg max-w-[80%] bg-gray-200 text-gray-800">
+                <p className="animate-pulse">Searching...</p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="p-6 border-t border-gray-200 bg-white">
@@ -85,16 +110,18 @@ const ChatBox = ({ isOpen, onClose }) => {
               placeholder="Type your message..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              disabled={isLoading}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   Handleclick_searchcars();
                 }
               }}
-              className="flex-1 border border-gray-300 rounded-full px-6 py-4 text-lg focus:outline-none focus:border-blue-500"
+              className="flex-1 border border-gray-300 rounded-full px-6 py-4 text-lg focus:outline-none focus:border-blue-500 disabled:opacity-50"
             />
             <button 
               onClick={Handleclick_searchcars}
-              className="bg-blue-600 text-white rounded-full p-4 hover:bg-blue-700 transition-colors focus:outline-none flex items-center justify-center"
+              disabled={isLoading}
+              className="bg-blue-600 text-white rounded-full p-4 hover:bg-blue-700 transition-colors focus:outline-none flex items-center justify-center disabled:opacity-50"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
