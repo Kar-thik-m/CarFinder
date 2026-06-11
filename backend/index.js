@@ -1,5 +1,5 @@
 import express from "express";
-import ConnectDb from "./Db/ConnectDb.js";
+import ConnectDb from "./Db/Connectdb.js";
 import dotenv from "dotenv";
 import cors from "cors";
 import cardetailsrouter from "./Routes/cardatasroutes.js";
