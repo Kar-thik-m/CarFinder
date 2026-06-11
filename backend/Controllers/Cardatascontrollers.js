@@ -55,16 +55,18 @@ export const SearchCar = async (req, res) => {
 const sanitizeQuery = (obj) => {
     if (Array.isArray(obj)) {
         return obj.map(sanitizeQuery);
-    } else if (obj !== null && typeof obj === 'object') {
+    } else if (obj !== null && typeof obj === "object") {
         if (obj.$regex !== undefined) {
-            return new RegExp(obj.$regex, obj.$options || '');
+            return new RegExp(obj.$regex, obj.$options || "");
         }
+
         const newObj = {};
         for (const key in obj) {
             newObj[key] = sanitizeQuery(obj[key]);
         }
         return newObj;
     }
+
     return obj;
 };
 
@@ -76,35 +78,49 @@ const resultodsearch = async (prompt) => {
         const intent = llmResponse.intent || "unknown";
         const preferences = llmResponse.preferences || {};
 
-        // Sanitize the query to fix Mongoose CastError with $regex
+        // Convert regex objects properly
         dbQuery = sanitizeQuery(dbQuery);
 
+        let results = [];
 
-        // 2. Execute the MongoDB query
-        const results = await CarData.find(dbQuery);
+        // Only query DB if there is a query
+        if (Object.keys(dbQuery).length > 0) {
+            results = await CarData.find(dbQuery).limit(2);
+        }
 
-        const scoredCars = results.map(car => ({
+        // No cars found
+        if (results.length === 0) {
+            return {
+                success: true,
+                reply: "I couldn't find any cars matching your criteria. Try adjusting your search!",
+                intent,
+                matchedCarsCount: 0,
+                searchQuery: dbQuery,
+                carDetails: [] // or "" if you prefer
+            };
+        }
+
+        // Score cars
+        const scoredCars = results.map((car) => ({
             ...car.toObject(),
             score: scoreCar(car, preferences)
         }));
 
-        // 5. Sort by score (highest first) and take top 3
+        // Sort by score
         const topCars = scoredCars
             .sort((a, b) => b.score - a.score)
             .slice(0, 2);
 
         let replyMessage = `Found ${results.length} cars matching your criteria.`;
-        if (results.length === 0) {
-            replyMessage = "I couldn't find any cars matching your criteria. Try adjusting your search!";
-        } else if (intent === "recommendations") {
+
+        if (intent === "recommendations") {
             replyMessage = `Here are the top ${topCars.length} recommendations:`;
         }
 
-        // 3. Return the detailed JSON structure combining intent and results
         return {
             success: true,
             reply: replyMessage,
-            intent: intent,
+            intent,
             matchedCarsCount: results.length,
             searchQuery: dbQuery,
             carDetails: topCars
@@ -112,7 +128,10 @@ const resultodsearch = async (prompt) => {
 
     } catch (error) {
         console.error("Error inside resultodsearch:", error);
-        return { success: false, error: "An error occurred during the search process." };
-    }
-}
 
+        return {
+            success: false,
+            error: "An error occurred during the search process."
+        };
+    }
+};
