@@ -81,9 +81,9 @@ const ChatBox = ({ isOpen, onClose }) => {
                       <div key={car._id} className="bg-white border border-gray-300 rounded-lg p-3 text-sm text-gray-800 shadow-sm">
                         <div className="font-bold text-base text-blue-600">{car.make} {car.model}</div>
                         <div className="font-medium">{car.variant}</div>
-                        <div className="mt-1 font-semibold">${car.price?.toLocaleString()}</div>
+                        <div className="mt-1 font-semibold">₹{car.price?.toLocaleString('en-IN')}</div>
                         <div className="text-gray-500 text-xs mt-1 flex flex-wrap gap-1">
-                          <span className="bg-gray-100 px-2 py-1 rounded">{car.mileage} MPG</span>
+                          <span className="bg-gray-100 px-2 py-1 rounded">{car.mileage} kmpl</span>
                           <span className="bg-gray-100 px-2 py-1 rounded">{car.fueltype}</span>
                           <span className="bg-gray-100 px-2 py-1 rounded">{car.bodytype}</span>
                         </div>
