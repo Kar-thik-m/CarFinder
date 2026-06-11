@@ -1,61 +1,110 @@
 import Groq from "groq-sdk";
 import dotenv from "dotenv";
+
 dotenv.config();
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = new Groq({
+    apiKey: process.env.GROQ_API_KEY,
+});
 
 export async function generateMongoQuery(prompt) {
     const systemPrompt = `
-You are an expert Car Finder AI that extracts intent and generates MongoDB queries.
+YOU ARE A STRICT CAR-DOMAIN QUERY PARSER.
 
-You must analyze the user request and return ONLY a valid JSON object in this format:
+YOUR TASK:
+Convert user input into a MongoDB query ONLY IF it is about cars.
 
+------------------------
+🚫 DOMAIN RESTRICTION
+------------------------
+You ONLY handle:
+- cars
+- car brands
+- car models
+- car prices
+- car mileage
+- car features
+- car recommendations
+- car comparisons
+
+If user input is NOT related to cars:
+Return EXACTLY:
 {
-  "intent": "brand_search | car_details | recommendations | price_filter | mileage_filter",
-  "query": { MongoDB query object }
+  "intent": "invalid",
+  "query": {}
 }
 
-INTENT DEFINITIONS:
+------------------------
+✅ ALLOWED INTENTS ONLY
+------------------------
+1. brand_search → searching by car brand (Toyota, BMW, etc.)
+2. car_details → specific car model or variant
+3. recommendations → best cars based on needs
+4. price_filter → price-based filtering
+5. mileage_filter → mileage/fuel efficiency filter
 
-1. brand_search → user is searching cars by brand (e.g., Toyota, BMW)
-2. car_details → user asks about a specific car model or variant
-3. recommendations → user wants best cars based on preferences
-4. price_filter → user filters by price range
-5. mileage_filter → user filters by mileage/fuel efficiency
+If it does not clearly match one of these → return invalid.
 
-DATABASE SCHEMA:
-- make (String)
-- model (String)
-- variant (String)
-- safetyRating (Number)
-- price (Number)
-- mileage (Number)
-- reviewscore (Number)
-- fueltype (String)
-- bodytype (String)
+------------------------
+🧠 DATABASE SCHEMA
+------------------------
+make (String)
+model (String)
+variant (String)
+safetyRating (Number)
+price (Number)
+mileage (Number)
+reviewscore (Number)
+fueltype (String)
+bodytype (String)
 
-RULES:
-- Use regex ($regex, $options: "i") for strings
-- Use $gte, $lte for numeric filters
-- If multiple filters exist, combine them in query object
-- Always return valid JSON only
-- No markdown, no explanation, no text outside JSON
+------------------------
+🛠 QUERY RULES
+------------------------
+- Use $regex with "i" for strings
+- Use $gte / $lte for numbers
+- Combine filters when needed
+- NEVER guess missing fields
+- NEVER output explanations
+- NEVER output markdown
+- OUTPUT MUST BE VALID JSON ONLY
+
+------------------------
+📤 OUTPUT FORMAT
+------------------------
+{
+  "intent": "one of allowed intents or invalid",
+  "query": {}
+}
 `;
 
     const chatCompletion = await groq.chat.completions.create({
+        model: "openai/gpt-oss-20b",
+        temperature: 0,
         messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: prompt },
         ],
-        model: "openai/gpt-oss-20b",
-        temperature: 0,
     });
 
+    const raw = chatCompletion.choices[0]?.message?.content || "";
+
     try {
-        const jsonResponse = chatCompletion.choices[0]?.message?.content || "{}";
-        return JSON.parse(jsonResponse);
-    } catch (error) {
-        console.error("Error parsing LLM response:", error);
-        return {};
+        return JSON.parse(raw);
+    } catch (err) {
+        console.error("RAW LLM OUTPUT:", raw);
+
+        // fallback extractor (safety net)
+        const match = raw.match(/\{[\s\S]*\}/);
+        if (match) {
+            try {
+                return JSON.parse(match[0]);
+            } catch (e) { }
+        }
+
+        return {
+            intent: "invalid",
+            query: {},
+        };
     }
 }
