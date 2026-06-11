@@ -9,9 +9,11 @@ const app = express();
 ConnectDb();
 dotenv.config();
 app.use(cors({
-    origin: ["http://localhost:5173", "https://carfider08.netlify.app/"]
-
-
+    origin: [
+        "http://localhost:5173",
+        "https://carfider08.netlify.app"
+    ],
+    credentials: true
 }));
 
 app.use(express.json());
