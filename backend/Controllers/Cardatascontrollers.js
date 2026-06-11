@@ -83,10 +83,8 @@ const resultodsearch = async (prompt) => {
 
         let results = [];
 
-        // Only query DB if there is a query
-        if (Object.keys(dbQuery).length > 0) {
-            results = await CarData.find(dbQuery).limit(2);
-        }
+        // Query DB (even if dbQuery is empty, to get all cars for scoring based on preferences)
+        results = await CarData.find(dbQuery);
 
         // No cars found
         if (results.length === 0) {
