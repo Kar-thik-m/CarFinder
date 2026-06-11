@@ -91,11 +91,19 @@ const resultodsearch = async (prompt) => {
         // 5. Sort by score (highest first) and take top 3
         const topCars = scoredCars
             .sort((a, b) => b.score - a.score)
-            .slice(0, 3);
+            .slice(0, 2);
+
+        let replyMessage = `Found ${results.length} cars matching your criteria.`;
+        if (results.length === 0) {
+            replyMessage = "I couldn't find any cars matching your criteria. Try adjusting your search!";
+        } else if (intent === "recommendations") {
+            replyMessage = `Here are the top ${topCars.length} recommendations:`;
+        }
 
         // 3. Return the detailed JSON structure combining intent and results
         return {
             success: true,
+            reply: replyMessage,
             intent: intent,
             matchedCarsCount: results.length,
             searchQuery: dbQuery,
