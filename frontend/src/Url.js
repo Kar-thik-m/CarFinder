@@ -1,1 +1,1 @@
-export const backendurl = 'http://localhost:8888'
+export const backendurl = 'https://carfinder-jzcn.onrender.com'
