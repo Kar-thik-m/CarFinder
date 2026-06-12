@@ -29,19 +29,38 @@ const ChatBox = ({ isOpen, onClose }) => {
 
       const data = await res.json();
 
-      if (!res.ok || !data.success) {
+      if (!res.ok) {
         setMessages((prev) => [...prev, {
-          text: data.error || "Sorry, I encountered an error while searching. Please try again.",
+          text: data.message || data.error || "Sorry, I encountered an error while searching. Please try again.",
           sender: 'bot'
         }]);
         return;
       }
 
-      let botText = data.reply || `Found ${data.matchedCarsCount || 0} cars matching your criteria.`;
+      let botText = "Here is what I found:";
+      let carsArray = [];
+
+      if (data.type === "recommendations") {
+        carsArray = data.recommendations || [];
+        botText = `I recommend these ${carsArray.length} cars based on your criteria.`;
+      } else if (data.type === "brand_search") {
+        carsArray = data.cars || [];
+        botText = `Found ${carsArray.length} cars matching that brand.`;
+      } else if (data.type === "car_details") {
+        carsArray = data.car ? [data.car] : [];
+        botText = data.car ? `Here are the details for the car you asked about.` : "I couldn't find a car matching that name.";
+      } else if (data.type === "compare") {
+        carsArray = data.cars || [];
+        botText = `Here is the comparison of the ${carsArray.length} cars.`;
+      } else {
+        botText = data.reply || `Found ${data.matchedCarsCount || 0} cars matching your criteria.`;
+        carsArray = data.carDetails || [];
+      }
+
       setMessages((prev) => [...prev, {
         text: botText,
         sender: 'bot',
-        cars: data.carDetails || []
+        cars: carsArray
       }]);
     } catch (error) {
       setMessages((prev) => [...prev, { text: "Network error. Make sure the backend is running.", sender: 'bot' }]);

@@ -1,6 +1,6 @@
 
 import './App.css'
-import CarSellLandingPage from './Page/CarSellLandingPage'
+import CarSellLandingPage from './pages/CarSellLandingPage'
 
 function App() {
   return (

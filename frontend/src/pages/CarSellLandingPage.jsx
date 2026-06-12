@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import ChatBox from '../Componnets/ChatBox';
+import ChatBox from '../components/ChatBox';
 
 const CarSellLandingPage = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
