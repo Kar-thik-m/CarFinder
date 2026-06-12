@@ -1,43 +1,58 @@
-import Groq from "groq-sdk";
-import dotenv from "dotenv";
-import { Prompt } from "./Prompt.js";
+import OpenAI from "openai";
 
-dotenv.config();
-
-const groq = new Groq({
+const client = new OpenAI({
   apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1"
 });
 
-export async function generateMongoQuery(prompt) {
-  const systemPrompt = Prompt;
+export async function extractUserIntent(userInput) {
+  const completion =
+    await client.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
 
-  const chatCompletion = await groq.chat.completions.create({
-    model: "openai/gpt-oss-20b",
-    temperature: 0,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: prompt },
-    ],
-  });
+      temperature: 0,
 
-  const raw = chatCompletion.choices[0]?.message?.content || "";
+      response_format: {
+        type: "json_object"
+      },
 
-  try {
-    return JSON.parse(raw);
-  } catch (err) {
-    console.error("RAW LLM OUTPUT:", raw);
+      messages: [
+        {
+          role: "system",
+          content: `
+Extract user intent.
 
-    // fallback extractor (safety net)
-    const match = raw.match(/\{[\s\S]*\}/);
-    if (match) {
-      try {
-        return JSON.parse(match[0]);
-      } catch (e) { }
-    }
+Return JSON only.
 
-    return {
-      intent: "invalid",
-      query: {},
-    };
-  }
+{
+ "intent":"",
+ "brand":null,
+ "specificCar":null,
+ "cars":[],
+ "budget":null,
+ "familySize":null,
+ "usage":null,
+ "fuelType":null,
+ "bodyType":null,
+ "priorities":[]
+}
+
+Possible intents:
+
+recommend
+brand_search
+car_details
+compare
+`
+        },
+        {
+          role: "user",
+          content: userInput
+        }
+      ]
+    });
+
+  return JSON.parse(
+    completion.choices[0].message.content
+  );
 }
